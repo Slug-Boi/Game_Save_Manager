@@ -1,3 +1,4 @@
+package src;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -5,31 +6,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 
 public class Git {
 
-	// example of usage
-	private static void initAndAddFile() throws IOException, InterruptedException {
-		Path directory = Paths.get("c:\\temp\\example");
-		Files.createDirectories(directory);
-		gitInit(directory);
-		Files.write(directory.resolve("example.txt"), new byte[0]);
-		gitStage(directory);
-		gitCommit(directory, "Add example.txt");
-	}
-
-	// example of usage
-	private static void cloneAndAddFile() throws IOException, InterruptedException {
-		String originUrl = "https://github.com/Crydust/TokenReplacer.git";
-		Path directory = Paths.get("c:\\temp\\TokenReplacer");
-		gitClone(directory, originUrl);
-		Files.write(directory.resolve("example.txt"), new byte[0]);
-		gitStage(directory);
-		gitCommit(directory, "Add example.txt");
-		gitPush(directory);
-	}
 
 	public static void gitInit(Path directory) throws IOException, InterruptedException {
 		runCommand(directory, "git", "init");

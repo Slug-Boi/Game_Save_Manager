@@ -1,3 +1,5 @@
+package src;
+
 import java.awt.Desktop;
 import java.awt.event.*;
 import java.io.File;
@@ -23,7 +25,7 @@ public class App extends JFrame{
     static String gamePath, savePath;
     static Path localPath = Paths.get(savePath);
     static Path gitPath = Paths.get("data\\GitSave\\GitSave.sav");
-    static long commitTime;
+    static long commitTime, lastCommitTime;
 
     public static void main(String[] args) throws Exception  {
         // Creates paths to the git repo and the save file in the git repo and the backups folder in the git repo
@@ -41,6 +43,8 @@ public class App extends JFrame{
                     gamePath = line[1];
                 } else if(line[0].equals("SavePath")) {
                     savePath = line[1];
+                } else if(line[0].equals("lastCommitTime")) {
+                    lastCommitTime = Long.parseLong(line[1]);
                 }
             }
         }
@@ -69,7 +73,7 @@ public class App extends JFrame{
        
         
         // Opens Game
-        //Desktop.getDesktop().open(new File(gamePath));
+        Desktop.getDesktop().open(new File(gamePath));
 
         // Creates a JFrame to close the program
         JFrame frame = new JFrame("Satisfactory Save Manager");
@@ -124,7 +128,7 @@ public class App extends JFrame{
     }
     public static void saveToGithub() throws Exception {
         // if git commit made in last 10 minutes, dont make another commit
-        if() {
+        if(lastCommitTime + 600000 > System.currentTimeMillis()) {
             System.exit(0);
         }
 
@@ -176,7 +180,7 @@ public class App extends JFrame{
                 System.out.println("GitPushed");
                 commitTime = System.currentTimeMillis();
             }
-            List<String> lines = Files.readAllLines(file.toPath());
+            List<String> lines = Files.readAllLines(filePaths.toPath());
             lines.set(4, "LastCommitTime:" + commitTime);
             Files.write(filePaths.toPath(), lines);
 
