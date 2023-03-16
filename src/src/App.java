@@ -1,5 +1,3 @@
-package src;
-
 import java.awt.Desktop;
 import java.awt.event.*;
 import java.io.File;
@@ -8,9 +6,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Scanner;
 
 import javax.swing.JButton;
@@ -23,22 +21,17 @@ public class App extends JFrame{
     private static JPanel panel = new JPanel();
     static File filePaths = new File("data\\FilePaths.txt");
     static String gamePath, savePath;
-    static int saveFileNumber;
-    static long latestCommit;
+    static Path localPath = Paths.get(savePath);
+    static Path gitPath = Paths.get("data\\GitSave\\GitSave.sav");
+    static long commitTime;
 
     public static void main(String[] args) throws Exception  {
         // Creates paths to the git repo and the save file in the git repo and the backups folder in the git repo
         Path gitRepo = Paths.get("data\\GitRepoSaves\\SatisfactorySaves");
-       
+        Path gitRepoSave = Paths.get("data\\GitRepoSaves\\SatisfactorySaves\\SaveFile\\saveFile.sav");
 
         // Pulls the latest version of the git repo
         Git.gitPull(gitRepo);
-
-        // Opens Game
-        //Desktop.getDesktop().open(new File(gamePath));
-        
-
-
 
         try (// Creates a scanner to read the file paths from the file
             Scanner sc = new Scanner(filePaths)) {
@@ -48,28 +41,11 @@ public class App extends JFrame{
                     gamePath = line[1];
                 } else if(line[0].equals("SavePath")) {
                     savePath = line[1];
-                } else if (line[0].equals("SaveFileNumber")) {
-                    saveFileNumber = Integer.parseint(line[1]);
-                } else if (line[0].equals("LatestCommit")) {
-                    latestCommit = Long.parseLong(line[1]);
                 }
-        }
-        
-
-        //TODO check that this works
-        if(latestCommit >= Instant.now().toEpochMilli() -600000) {
-            System.out.println("Save file has been backed up in the last 10 minutes");
-            System.exit(0);
+            }
         }
 
-        Path localPath = Paths.get(savePath);
-        Path gitPath = Paths.get("data\\GitSave\\Satisfac.sav");
-
-
-        // Creates a Save object for each save file
-        // Localattr and gitattr are used to get the last modified time of the save files
-        // splitpSaveTime and splitGitSaveTime are used to split the last modified time into an array of strings for each part of the time
-        // Save is a class that stores the last modified time of the save file and the path to the save file
+        // Creates a path to the save file in the game folder and the save file in the git repo
         BasicFileAttributes localAttr = Files.readAttributes(localPath, BasicFileAttributes.class);
         String localSaveTime = localAttr.lastModifiedTime().toString();
 
@@ -85,19 +61,15 @@ public class App extends JFrame{
         Save[] saves = new Save[2];
         saves[0] = saveLocal;
         saves[1] = saveGit;
+        arraySort(saves);
 
-        // Sorts the saves by last modified time
-        Comparator<Save> saveComparator = Comparator.comparing(Save :: getYear)
-                                                    .thenComparing(Save :: getMonth)
-                                                    .thenComparing(Save :: getDay)
-                                                    .thenComparing(Save :: getHour)
-                                                    .thenComparing(Save :: getMinute)
-                                                    .thenComparing(Save :: getSecond);
-        Arrays.sort(saves, saveComparator);  
-        
         if(saves[1] == saveGit) {
-            Files.copy(gitPath, localPath, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(gitRepoSave, localPath, StandardCopyOption.REPLACE_EXISTING);   
         }
+       
+        
+        // Opens Game
+        //Desktop.getDesktop().open(new File(gamePath));
 
         // Creates a JFrame to close the program
         JFrame frame = new JFrame("Satisfactory Save Manager");
@@ -151,6 +123,11 @@ public class App extends JFrame{
         System.exit(0);
     }
     public static void saveToGithub() throws Exception {
+        // if git commit made in last 10 minutes, dont make another commit
+        if() {
+            System.exit(0);
+        }
+
         System.out.println("Saving to Github");
         // Creates paths to the git repo and the save file in the git repo and the backups folder in the git repo
             Path gitRepo = Paths.get("data\\GitRepoSaves\\SatisfactorySaves"); 
@@ -158,8 +135,7 @@ public class App extends JFrame{
             Path gitRepoBackups = Paths.get("data\\GitRepoSaves\\SatisfactorySaves\\Backups\\saveFile" + "" + ".sav");
 
             // Creates paths to the save files
-            Path localPath = Paths.get(savePath);
-            Path gitPath = Paths.get("data\\GitSave\\GitSave.sav");
+            
 
             // Creates a Save object for each save file
             // Localattr and gitattr are used to get the last modified time of the save files
@@ -180,19 +156,11 @@ public class App extends JFrame{
             Save[] saves = new Save[2];
             saves[0] = saveLocal;
             saves[1] = saveGit;
-
-            // Sorts the saves by last modified time
-            Comparator<Save> saveComparator = Comparator.comparing(Save :: getYear)
-                                                        .thenComparing(Save :: getMonth)
-                                                        .thenComparing(Save :: getDay)
-                                                        .thenComparing(Save :: getHour)
-                                                        .thenComparing(Save :: getMinute)
-                                                        .thenComparing(Save :: getSecond);
-            Arrays.sort(saves, saveComparator);  
+            arraySort(saves);
+            
 
             // If the local save is newer than the git save, copy the local save to the git repo and commit it
             // If the git save is newer than the local save, copy the git save to the git repo and commit it
-            //TODO Write to line 4 of the filePaths.txt file
             if(saves[1] == saveLocal) {
             try{
                 Files.copy(saveLocal.getPath(), gitRepoSave, StandardCopyOption.REPLACE_EXISTING);
@@ -206,20 +174,23 @@ public class App extends JFrame{
                 System.out.println("GitCommitted");
                 Git.gitPush(gitRepo);
                 System.out.println("GitPushed");
-            } else if(saves[1] == saveGit) {
-                try{
-                    Files.copy(saveGit.getPath(), gitRepoSave, StandardCopyOption.REPLACE_EXISTING);
-                    Files.copy(saveGit.getPath(), gitRepoBackups, StandardCopyOption.REPLACE_EXISTING);
-                } catch (Exception e) {
-                    System.out.println(e.getMessage());
-                }
-                Git.gitStage(gitRepo);
-                System.out.println("GitStaged");
-                Git.gitCommit(gitRepo, gitAttr.lastModifiedTime().toString());
-                System.out.println("GitCommitted");
-                Git.gitPush(gitRepo);
-                System.out.println("GitPushed");
+                commitTime = System.currentTimeMillis();
             }
+            List<String> lines = Files.readAllLines(file.toPath());
+            lines.set(4, "LastCommitTime:" + commitTime);
+            Files.write(filePaths.toPath(), lines);
 
+    }
+
+    public static Save[] arraySort(Save[] saves) {
+        // Sorts the saves by last modified time
+        Comparator<Save> saveComparator = Comparator.comparing(Save :: getYear)
+        .thenComparing(Save :: getMonth)
+        .thenComparing(Save :: getDay)
+        .thenComparing(Save :: getHour)
+        .thenComparing(Save :: getMinute)
+        .thenComparing(Save :: getSecond);
+        Arrays.sort(saves, saveComparator);  
+        return saves;
     }
 }
